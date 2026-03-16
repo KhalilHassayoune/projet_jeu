@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doodle Jump Phaser</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+</head>
+<body>
+<script>
+const WIDTH = 450;
+const HEIGHT = 800;
+const PLATFORM_COUNT = 7;
+
+let player;
+let platforms;
+let cursors;
+
+const config = {
+  type: Phaser.AUTO,
+  width: WIDTH,
+  height: HEIGHT,
+  backgroundColor: "#87CEEB",
+  physics: {
+    default: "arcade",
+    arcade: {
+      gravity: { y: 700 },
+      debug: false
+    }
+  },
+  scene: {
+    preload,
+    create,
+    update
+  }
+};
+
+new Phaser.Game(config);
+
+function preload() {
+  // Pas d'images externes : on dessine tout en graphique simple
+}
+
+function create() {
+  this.add.text(20, 20, "Mini Doodle Jump", {
+    fontSize: "20px",
+    color: "#000"
+  });
+
+  platforms = this.physics.add.staticGroup();
+
+  // Sol + 9 autres = 10 plateformes
+const positions = [
+  { x: 225, y: 760 },
+  { x: 100, y: 700 },
+  { x: 350, y: 640 },
+  { x: 180, y: 580 },
+  { x: 300, y: 520 },
+  { x: 120, y: 460 },
+  { x: 260, y: 400 },
+  { x: 80,  y: 340 },
+  { x: 340, y: 280 },
+  { x: 200, y: 220 }
+];
+
+  positions.forEach(pos => {
+    const platform = this.add.rectangle(pos.x, pos.y, 100, 18, 0x228b22);
+    this.physics.add.existing(platform, true);
+    platforms.add(platform);
+  });
+
+  // Joueur
+  player = this.add.rectangle(400, 350, 30, 40, 0xffcc00);
+  this.physics.add.existing(player);
+
+  player.body.setCollideWorldBounds(false);
+  player.body.setBounce(0);
+
+  // Collision joueur / plateformes
+  this.physics.add.collider(player, platforms, (joueur, plateforme) => {
+    if (joueur.body.velocity.y > 0) {
+      joueur.body.setVelocityY(-420);
+    }
+  });
+
+  cursors = this.input.keyboard.createCursorKeys();
+}
+
+function update() {
+  // Déplacement gauche / droite
+  if (cursors.left.isDown) {
+    player.body.setVelocityX(-220);
+  } else if (cursors.right.isDown) {
+    player.body.setVelocityX(220);
+  } else {
+    player.body.setVelocityX(0);
+  }
+
+  // Rotation écran type Doodle Jump
+  if (player.x < 0) {
+    player.x = WIDTH;
+  } else if (player.x > WIDTH) {
+    player.x = 0;
+  }
+
+  // Empêche de rebondir en remontant à travers une plateforme
+  platforms.getChildren().forEach(platform => {
+    platform.body.checkCollision.down = false;
+    platform.body.checkCollision.left = false;
+    platform.body.checkCollision.right = false;
+
+    if (player.body.velocity.y > 0) {
+      platform.body.checkCollision.up = true;
+    } else {
+      platform.body.checkCollision.up = false;
+    }
+  });
+
+  // Reset si le joueur tombe
+  if (player.y > HEIGHT + 50) {
+    player.x = 400;
+    player.y = 350;
+    player.body.setVelocity(0, -300);
+  }
+}
+</script>
+</body>
+</html>
